@@ -854,9 +854,20 @@ describe("Chart Rendering Test", () => {
         }
         return hitCaptureMarker;
       });
+      const edgeTarget = document.elementFromPoint(
+        Math.round(left + 5),
+        Math.round(top + height / 2),
+      );
+      const edgeCaptureHit =
+        captureMarker &&
+        (edgeTarget === captureMarker || captureMarker.contains(edgeTarget));
 
       return {
         captureHits,
+        edgeCaptureHit,
+        left,
+        top,
+        height,
         areaRecorded: document
           .querySelector(".leaflet-control-measure .js-results")
           .textContent.includes("Area"),
@@ -864,6 +875,26 @@ describe("Chart Rendering Test", () => {
     `);
 
     expect(measurementResult.captureHits).toEqual([true, true, true]);
+    expect(measurementResult.edgeCaptureHit).toBe(true);
     expect(measurementResult.areaRecorded).toBe(true);
+
+    const initialMapPaneTransform = await driver.executeScript(
+      'return getComputedStyle(document.querySelector(".leaflet-map-pane")).transform',
+    );
+    await driver
+      .actions()
+      .move({
+        origin: "viewport",
+        x: Math.round(measurementResult.left + 5),
+        y: Math.round(measurementResult.top + measurementResult.height / 2),
+      })
+      .press()
+      .move({origin: "pointer", x: 30, y: 0})
+      .release()
+      .perform();
+    const finalMapPaneTransform = await driver.executeScript(
+      'return getComputedStyle(document.querySelector(".leaflet-map-pane")).transform',
+    );
+    expect(finalMapPaneTransform).toBe(initialMapPaneTransform);
   });
 });
